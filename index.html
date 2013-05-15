@@ -1,41 +1,10 @@
 <!DOCTYPE html>
 <meta charset="utf-8">
 <style>
-
-
-    .subunit.Cherkasy { fill: #ddc; }
-    .subunit.Chernihiv { fill: #cdd; }
-    .subunit.Chernivtsi { fill: #cdd; }
-    .subunit.Crimea { fill: #cdd; }
-    .subunit.Dnipropetrovs\'k { fill: #cdd; }
-    .subunit.Donets\'k { fill: #cdd; }
-    .subunit.Ivano-Frankivs\'k { fill: #cdd; }
-    .subunit.Kharkiv { fill: #cdd; }
-    .subunit.Kherson { fill: #cdd; }
-    .subunit.Khmel\'nyts\'kyy { fill: #cdd; }
-    .subunit.Kyiv { fill: #cdd; }
-    .subunit.Kyiv City { fill: #cdd; }
-    .subunit.Kirovohrad { fill: #cdd; }
-    .subunit.Luhans\'k { fill: #cdd; }
-    .subunit.L\'viv { fill: #cdd; }
-    .subunit.Mykolayiv { fill: #cdd; }
-    .subunit.Odessa { fill: #cdd; }
-    .subunit.Poltava { fill: #cdd; }
-    .subunit.Rivne { fill: #cdd; }
-    .subunit.Sevastopol\' { fill: #cdd; }
-    .subunit.Sumy { fill: #cdd; }
-    .subunit.Ternopil\' { fill: #cdd; }
-    .subunit.Transcarpathia { fill: #cdd; }
-    .subunit.Vinnytsya { fill: #cdd; }
-    .subunit.Volyn { fill: #cdd; }
-    .subunit.Zaporizhzhya { fill: #cdd; }
-    .subunit.Zhytomyr { fill: #cdd; }
-
 </style>
 <body>
 <script src="http://d3js.org/d3.v3.min.js"></script>
 <script src="http://d3js.org/topojson.v1.min.js"></script>
-<script src="jquery.csv-0.71.js"></script>
 
 <script>
     var width = 960,
@@ -47,40 +16,85 @@
 </script>
 <script>
 
-d3.json("ua_topo.json", function(error, ua) {
-    uk = ua
+d3.json("ua_topo_with_credits.json", function(error, ua) {
+    var color = d3.scale.threshold()
+            .domain([ 2000, 3000, 4000, 5000])
+            .range(["#ff4d4d","#fe0000","#ff2727","#620000", "#3b0000"]);
+    // A position encoding for the key only.
+    var x = d3.scale.linear()
+            .domain([0, 1000])
+            .range([0, 100]);
+
+    var xAxis = d3.svg.axis()
+            .scale(x)
+            .orient("bottom")
+            .tickSize(13)
+            .tickValues(color.domain());
     var subunits = topojson.feature(ua, ua.objects.states);
     var projection = d3.geo.mercator()
-            .center([31.03, 45.07])
+            .center([31.03, 46.07])
             .scale(3000)
             .translate([width / 2, height / 2]);
 
     var path = d3.geo.path()
             .projection(projection);
+
+    var g = svg.append("g")
+            .attr("class", "key")
+            .attr("transform", "translate(40,40)");
+
+    g.selectAll("rect")
+            .data(color.range().map(function(d, i) {
+                return {
+                    x0: i ? x(color.domain()[i - 1]) : x.range()[0],
+                    x1: i < color.domain().length ? x(color.domain()[i]) : x.range()[1],
+                    z: d
+                };
+            }))
+            .enter().append("rect")
+            .attr("height", 8)
+            .attr("x", function(d) { return d.x0; })
+            .attr("width", function(d) { return d.x1 - d.x0; })
+            .style("fill", function(d) { return d.z; });
+
+    g.call(xAxis).append("text")
+            .attr("class", "caption")
+            .attr("y", -6)
+            .text("Кредити, грн");
+
     svg.append("path")
             .datum(subunits)
             .attr("d", path);
-    svg.selectAll(".subunit")
+
+    svg.append("g")
+            .attr("class", "county")
+            .selectAll("path")
             .data(topojson.feature(ua, ua.objects.states).features)
             .enter().append("path")
-            .attr("class", function(d) { return "subunit " + d.properties.oblname; })
-            .attr("d", path);
-    svg.append("path")
-            .datum(topojson.feature(ua, ua.objects.mista))
             .attr("d", path)
-            .attr("class", "place");
-    svg.selectAll(".place-label")
-            .data(topojson.feature(ua, ua.objects.mista).features)
-            .enter().append("text")
-            .attr("class", "place-label")
-            .attr("transform", function(d) { return "translate(" + projection(d.geometry.coordinates) + ")"; })
-            .attr("dy", ".35em")
-            .text(function(d) { return d.properties.name; });
-    svg.selectAll(".place-label")
-            .attr("x", function(d) { return d.geometry.coordinates[0] > -1 ? 6 : -6; })
-            .style("text-anchor", function(d) { return d.geometry.coordinates[0] > -1 ? "start" : "end"; });
+            .style("fill", function(d) { return color(d.density = d.properties.credits); })
+            .text(function(d) { return d.properties.credits; });
+
+//    svg.selectAll(".subunit")
+//            .data(topojson.feature(ua, ua.objects.states).features)
+//            .enter().append("path")
+//            .attr("class", function(d) { return "subunit " + d.properties.oblname; })
+//            .attr("d", path);
+//    svg.append("path")
+//            .datum(topojson.feature(ua, ua.objects.mista))
+//            .attr("d", path)
+//            .attr("class", "place");
+//    svg.selectAll(".place-label")
+//            .data(topojson.feature(ua, ua.objects.mista).features)
+//            .enter().append("text")
+//            .attr("class", "place-label")
+//            .attr("transform", function(d) { return "translate(" + projection(d.geometry.coordinates) + ")"; })
+//            .attr("dy", ".35em")
+//            .text(function(d) { return d.properties.name; });
+//    svg.selectAll(".place-label")
+//            .attr("x", function(d) { return d.geometry.coordinates[0] > -1 ? 6 : -6; })
+//            .style("text-anchor", function(d) { return d.geometry.coordinates[0] > -1 ? "start" : "end"; });
 
 });
-
 
 </script>
