@@ -17,19 +17,21 @@
 <script>
 
 d3.json("ua_topo_with_credits.json", function(error, ua) {
+    var red = d3.rgb(255, 0, 0);
     var color = d3.scale.threshold()
-            .domain([ 2000, 3000, 4000, 5000])
-            .range(["#ff4d4d","#fe0000","#ff2727","#620000", "#3b0000"]);
+            .domain([2000, 3000, 4000, 5000])
+            .range([red.darker(1),red.darker(2),red.darker(3),red.darker(4),red.darker(5)]);
     // A position encoding for the key only.
     var x = d3.scale.linear()
-            .domain([0, 1000])
-            .range([0, 100]);
+            .domain([0, 10])
+            .range([0, 1]);
 
     var xAxis = d3.svg.axis()
             .scale(x)
             .orient("bottom")
-            .tickSize(13)
+            .tickSize(10)
             .tickValues(color.domain());
+
     var subunits = topojson.feature(ua, ua.objects.states);
     var projection = d3.geo.mercator()
             .center([31.03, 46.07])
@@ -60,7 +62,7 @@ d3.json("ua_topo_with_credits.json", function(error, ua) {
     g.call(xAxis).append("text")
             .attr("class", "caption")
             .attr("y", -6)
-            .text("Кредити, грн");
+            .text("Кредити на особу, грн");
 
     svg.append("path")
             .datum(subunits)
